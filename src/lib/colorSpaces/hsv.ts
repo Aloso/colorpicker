@@ -1,25 +1,21 @@
-import {
-  angleSlider,
-  defaultSlider,
-  hsWheelCoords,
-  noLut,
-  type ColorSpace,
-} from ".";
+import { hsWheelCoords, noLut, type ColorSpace } from '.'
+import { angleComponent, regularComponent } from './util/component'
 
-import hsvShader from "../shaders/hsvFragment.glsl?raw";
+import glslShader from '../shaders/hsv.glsl?raw'
 
 export const hsv: ColorSpace = {
-  name: "HSV",
-  mode: "hsv",
+  name: 'HSV',
+  mode: 'hsv',
 
-  sliders: [
-    angleSlider("h", "Hue"),
-    defaultSlider("s", "Saturation"),
-    defaultSlider("v", "Value"),
+  components: [
+    angleComponent('h', 'Hue'),
+    regularComponent('s', 'Saturation'),
+    regularComponent('v', 'Value', { glslShader }),
   ],
+  defaultComponent: 'v',
 
-  shaderValue: "v",
-  shader: hsvShader,
+  shaderValue: 'v',
+  shader: glslShader,
   coords: hsWheelCoords,
   lut: noLut,
-};
+}

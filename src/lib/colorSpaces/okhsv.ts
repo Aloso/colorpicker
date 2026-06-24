@@ -1,26 +1,24 @@
-import {
-  angleSlider,
-  defaultSlider,
-  hsWheelCoords,
-  noLut,
-  type ColorSpace,
-} from ".";
+import { hsWheelCoords, noLut, type ColorSpace } from '.'
+import { angleComponent, regularComponent } from './util/component'
 
-import okhsvShader from "../shaders/okhsvFragment.glsl?raw";
-import oklabLibrary from "../shaders/oklabLibrary.glsl?raw";
+import shader from '../shaders/okhsv.glsl?raw'
+import oklabLibrary from '../shaders/oklabLibrary.glsl?raw'
 
 export const okhsv: ColorSpace = {
-  name: "Ok HSV",
-  mode: "okhsv",
+  name: 'Ok HSV',
+  mode: 'okhsv',
 
-  sliders: [
-    angleSlider("h", "Hue"),
-    defaultSlider("s", "Saturation"),
-    defaultSlider("v", "Value"),
+  components: [
+    angleComponent('h', 'Hue'),
+    regularComponent('s', 'Saturation'),
+    regularComponent('v', 'Value', {
+      glslShader: shader.replace('// OKLAB IMPORTS', oklabLibrary),
+    }),
   ],
+  defaultComponent: 'v',
 
-  shaderValue: "v",
-  shader: okhsvShader.replace("// OKLAB IMPORTS", oklabLibrary),
+  shaderValue: 'v',
+  shader: shader.replace('// OKLAB IMPORTS', oklabLibrary),
   coords: hsWheelCoords,
   lut: noLut,
-};
+}

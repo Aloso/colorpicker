@@ -13,6 +13,11 @@ out vec4 fragColor;
 
 // OKLAB IMPORTS
 
+// A lightweight, high-performance pseudo-random noise function for dithering
+float screenSpaceNoise(vec2 uv) {
+  return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
 void main() {
   vec2 mid = u_resolution * 0.5;
   vec2 r = gl_FragCoord.xy - mid;
@@ -37,5 +42,8 @@ void main() {
   float hue = fract((angle / M_PI) * 0.5 + 0.5);
 
   vec3 finalColor = okhsl_to_srgb(vec3(hue, fromCenter, u_value));
+  float noise = screenSpaceNoise(gl_FragCoord.xy);
+  finalColor += (noise - 0.5) * (1.0 / 255.0);
+
   fragColor = vec4(finalColor, alpha);
 }

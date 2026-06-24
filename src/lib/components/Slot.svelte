@@ -1,50 +1,39 @@
 <script lang="ts">
-  import { formatCss, p3 as convertToP3, formatRgb } from "culori";
-  import type { MyColor } from "../../state.svelte";
+  import { formatCss, p3 as convertToP3, formatRgb } from 'culori'
+  import type { MyColor } from '../../state.svelte'
 
   interface Props {
-    type: "color" | "add" | "skeleton";
-    label: string;
-    color?: MyColor;
-    selected?: boolean;
-    clampToRgb?: boolean;
-    onAdd?: () => void;
-    onSelect?: () => void;
-    onDelete?: () => void;
+    type: 'color' | 'add' | 'skeleton'
+    label: string
+    color?: MyColor
+    selected?: boolean
+    clampToRgb?: boolean
+    onAdd?: () => void
+    onSelect?: () => void
+    onDelete?: () => void
   }
 
-  let {
-    type,
-    color,
-    label,
-    selected,
-    clampToRgb,
-    onAdd,
-    onSelect,
-    onDelete,
-  }: Props = $props();
-  let isAdd = $derived(type === "add");
-  let isSkeleton = $derived(type === "skeleton");
+  let { type, color, label, selected, clampToRgb, onAdd, onSelect, onDelete }: Props = $props()
+  let isAdd = $derived(type === 'add')
+  let isSkeleton = $derived(type === 'skeleton')
 </script>
 
 <div class="slot">
-  {#if type === "color"}
+  {#if type === 'color'}
     <button
       class="color-button"
       class:selected
-      style="--color: {clampToRgb
-        ? formatRgb(color!)
-        : formatCss(convertToP3(color!))}"
+      style="--color: {clampToRgb ? formatRgb(color!) : formatCss(convertToP3(color!))}"
       aria-label={label}
       onclick={onSelect}
       oncontextmenucapture={(e) => {
         if (onDelete) {
-          e.preventDefault();
-          onDelete();
+          e.preventDefault()
+          onDelete()
         }
       }}
     ></button>
-  {:else if type === "add" || type === "skeleton"}
+  {:else if type === 'add' || type === 'skeleton'}
     <button
       class="color-button"
       class:isSkeleton
@@ -52,7 +41,7 @@
       aria-label={label}
       onclick={isAdd ? onAdd : undefined}
     >
-      {isAdd ? "+" : undefined}
+      {isAdd ? '+' : undefined}
     </button>
   {/if}
 </div>

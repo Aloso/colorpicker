@@ -15,6 +15,11 @@ float sd_rounded_box(vec2 p, vec2 b, vec4 r) {
   return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - q.x;
 }
 
+// A lightweight, high-performance pseudo-random noise function for dithering
+float screenSpaceNoise(vec2 uv) {
+  return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
 void main() {
   vec2 mid = u_resolution * 0.5;
   vec2 p = gl_FragCoord.xy - mid;
@@ -35,6 +40,9 @@ void main() {
   uv = clamp(uv, 0.0, 1.0);
 
   vec3 finalColor = texture(u_lut, uv).rgb;
+
+  float noise = screenSpaceNoise(gl_FragCoord.xy);
+  finalColor += (noise - 0.5) * (1.0 / 255.0);
 
   fragColor = vec4(finalColor, alpha);
 }

@@ -1,70 +1,89 @@
 <script lang="ts">
-  import { colorState, type MyColor } from "../../state.svelte";
-  import { hsl, hsv, lab, lch, okhsl, okhsv, rgb } from "../colorSpaces";
-  import type { ColorSpace } from "../colorSpaces";
-  import { converters } from "../helpers/color";
-  import { renderSquare } from "../helpers/renderSquare.svelte";
-  import { formatCss, lab as convertToLab } from "culori";
+  import { colorState, type MyColor } from '../../state.svelte'
+  import { hsl, hsv, lab, lch, okhsl, okhsv, rgb } from '../colorSpaces'
+  import type { ColorSpace } from '../colorSpaces'
+  import { converters } from '../helpers/color'
+  import { renderSquare } from '../helpers/renderSquare.svelte'
+  import { formatCss, lab as convertToLab } from 'culori'
+  import { wgpuRenderSquare } from '../helpers/wgpuRenderSquare.svelte'
 
-  const colorSpaces = [okhsl, okhsv, hsl, hsv, rgb, lab, lch];
-  const colorSpaceLookup = Object.fromEntries(
-    colorSpaces.map((c) => [c.mode, c]),
-  ) as { [key in MyColor["mode"]]: ColorSpace };
+  const colorSpaces = [okhsl, okhsv, hsl, hsv, rgb, lab, lch]
+  const colorSpaceLookup = Object.fromEntries(colorSpaces.map((c) => [c.mode, c])) as {
+    [key in MyColor['mode']]: ColorSpace
+  }
 
   let convertedColor = $derived(
     colorState.color.mode === colorState.mode
       ? colorState.color
       : converters[colorState.mode](colorState.color),
-  );
+  )
 
-  let space = $derived(
-    colorSpaceLookup[colorState.mode] ?? colorSpaceLookup.okhsl,
-  );
+  let space = $derived(colorSpaceLookup[colorState.mode] ?? colorSpaceLookup.okhsl)
+
+  let isDarkScheme = $state(false)
+  let supportsGpu = $state(false)
+
+  $effect(() => {
+    let matchDarkScheme = window.matchMedia('(prefers-color-scheme: dark)')
+    isDarkScheme = matchDarkScheme.matches
+
+    matchDarkScheme.addEventListener('change', (event) => {
+      isDarkScheme = event.matches
+    })
+  })
+
+  $effect(() => {
+    if (navigator.gpu) {
+      ;(async () => {
+        const adapter = await navigator.gpu.requestAdapter()
+        if (adapter) supportsGpu = true
+      })()
+    }
+  })
 
   const wheelGetters = $derived({
     value: property(space.mode, space.shaderValue).get,
     padding: () => 0,
     cornerRadius: () => 10,
-    lut: () => space.lut?.(convertedColor, 128) ?? new Uint8Array(),
-  });
+    background: () => (isDarkScheme ? 0.093 : 1),
+    lut: (size: number) => space.lut?.(convertedColor, size) ?? new Uint8Array(),
+    wgpuLut: (size: number) => space.wgpuLut?.(convertedColor, size) ?? new Uint16Array(),
+  })
 
   const slidersWithProps = $derived(
-    space.sliders.map((s) => {
-      const prop = property(colorState.mode, s.key as any);
-      return { ...s, ...prop };
+    space.components.map((s) => {
+      const prop = property(colorState.mode, s.key as any)
+      return { ...s, ...prop }
     }),
-  );
+  )
 
-  function property(mode: MyColor["mode"], key: string) {
+  function property(mode: MyColor['mode'], key: string) {
     return {
       get() {
         if (colorState.color.mode === mode) {
-          return ((colorState.color as any)[key] ?? 0) as number;
+          return ((colorState.color as any)[key] ?? 0) as number
         } else {
-          return ((converters[mode](colorState.color) as any)[key] ??
-            0) as number;
+          return ((converters[mode](colorState.color) as any)[key] ?? 0) as number
         }
       },
       set(value: number) {
         if (colorState.color.mode === mode) {
-          (colorState.color as any)[key] = value;
+          ;(colorState.color as any)[key] = value
         } else {
           const fallback =
-            mode === colorState.color.mode
-              ? colorState.color.fallback
-              : colorState.color;
+            mode === colorState.color.mode ? colorState.color.fallback : colorState.color
 
           colorState.color = {
             ...converters[mode](colorState.color),
             [key]: value,
             fallback,
-          };
+          }
         }
       },
-    };
+    }
   }
 
-  let coords = $derived(space.coords(convertedColor));
+  let coords = $derived(space.coords(convertedColor))
 </script>
 
 <div class="vertical-layout">
@@ -75,12 +94,21 @@
         convertToLab(colorState.color),
       )}"
     ></div>
-    <canvas
-      {@attach renderSquare(
-        { fragment: space.shader, lut: !!space.lut },
-        wheelGetters,
-      )}
-    ></canvas>
+    {#if supportsGpu && space.wgpuShader && space.wgpuLut}
+      <canvas
+        {@attach wgpuRenderSquare(
+          {
+            fragment: space.wgpuShader,
+            lut: !!space.wgpuLut,
+            lutSize: space.wgpuTextureSize,
+          },
+          wheelGetters,
+        )}
+      ></canvas>
+    {:else}
+      <canvas {@attach renderSquare({ fragment: space.shader, lut: !!space.lut }, wheelGetters)}
+      ></canvas>
+    {/if}
   </div>
 
   <div class="sliders">
@@ -99,9 +127,8 @@
     </div>
 
     {#each slidersWithProps as slider (`${colorState.mode}-${slider.key}`)}
-      {slider.label}: {Math.round(
-        ((convertedColor as any)[slider.key] ?? 0) * 10 * slider.scale,
-      ) / 10}{slider.unit}
+      {slider.label}: {Math.round(((convertedColor as any)[slider.key] ?? 0) * 10 * slider.scale) /
+        10}{slider.unit}
       <input
         type="range"
         bind:value={slider.get, slider.set}
@@ -109,7 +136,7 @@
         max={slider.max}
         step={slider.step}
         onchange={() => {
-          colorState.committed = { ...colorState.color };
+          colorState.committed = { ...colorState.color }
         }}
       />
     {/each}

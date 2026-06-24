@@ -1,33 +1,27 @@
 <script lang="ts">
-  import {
-    colorState,
-    slotState,
-    type MyColor,
-    type SavedColor,
-  } from "../../state.svelte.js";
-  import Slot from "./Slot.svelte";
+  import { colorState, slotState, type MyColor, type SavedColor } from '../../state.svelte.js'
+  import Slot from './Slot.svelte'
 
   let favourites = $derived(
     [
       ...slotState.savedExplicitly.slice(-11),
       ...Array.from<SavedColor | undefined>({ length: 12 }),
     ].slice(0, 12),
-  );
+  )
 
   function addSavedColor(color: MyColor) {
-    const last =
-      slotState.savedExplicitly[slotState.savedExplicitly.length - 1];
-    const id = last?.id ?? 0;
-    slotState.savedExplicitly.push({ color: { ...color }, id: id + 1 });
+    const last = slotState.savedExplicitly[slotState.savedExplicitly.length - 1]
+    const id = last?.id ?? 0
+    slotState.savedExplicitly.push({ color: { ...color }, id: id + 1 })
   }
 
   function removeSavedColor(id: number) {
-    const idx = slotState.savedExplicitly.findIndex((s) => s.id === id);
-    if (idx !== -1) slotState.savedExplicitly.splice(idx, 1);
+    const idx = slotState.savedExplicitly.findIndex((s) => s.id === id)
+    if (idx !== -1) slotState.savedExplicitly.splice(idx, 1)
   }
 
   function select(color: MyColor) {
-    colorState.color = colorState.committed = { ...color };
+    colorState.color = colorState.committed = { ...color }
   }
 </script>
 
@@ -36,10 +30,10 @@
   {#each favourites as fav, i}
     <Slot
       type={fav !== undefined
-        ? "color"
+        ? 'color'
         : i === 0 || favourites[i - 1] !== undefined
-          ? "add"
-          : "skeleton"}
+          ? 'add'
+          : 'skeleton'}
       color={fav?.color}
       label="S{i + 1}"
       onAdd={() => addSavedColor(colorState.color)}
@@ -63,13 +57,7 @@
 
 <p>Selected color:</p>
 <div class="row selected">
-  <Slot
-    type="color"
-    selected
-    label="Committed color"
-    color={colorState.committed}
-    clampToRgb
-  />
+  <Slot type="color" selected label="Committed color" color={colorState.committed} clampToRgb />
   <Slot type="color" selected label="Selected color" color={colorState.color} />
 </div>
 
